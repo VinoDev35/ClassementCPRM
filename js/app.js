@@ -1,110 +1,44 @@
-const API_KEY = "AIzaSyCWqZKaM94RWvuNDuZPH7kHx2SpB2UIADQ" ;
-const DOSSIER_MTT = "1bYjFfCN0SrYSdGWD0fzRVeB6RWrD97NW"
-const DOSSIER_SNG = "1oeBA4nWW6hRbgeCx3XrbYusxhiyHYjQi";
-const DOSSIER_SNGT = "1YRus9v9eK5x2n04JkVBN0NAHqgYePspd";
-const DOSSIER_CASH = "1DUkwezVBjqLI8_6e-KTXXWyKjGY4WvSY";
+const DATE_DEBUT = "2026-09-01";
+const DATE_FIN = "2027-06-30";
 
 
-async function chercherFichiersDrive(dossier, type) {
+async function chargerAdherents() {
 
-    const url =
-        `https://www.googleapis.com/drive/v3/files` +
-        `?q='${dossier}' in parents and trashed = false` +
-        `&fields=files(id,name,mimeType,capabilities,webContentLink,resourceKey)` +
-        `&key=${API_KEY}`;
+    const reponse = await fetch("csv/adherents.csv");
+    const texte = await reponse.text();
 
-    const reponse = await fetch(url);
+    const lignes = texte.trim().split("\r\n");
 
-    const donnees = await reponse.json();
-
-    const joueurs = [];
-
-    for (const fichier of donnees.files) {
-
-        fichier.type = type;
-
-        console.log(fichier);
-
-        const resultat = await chargerCSVDrive(fichier);
-
-        joueurs.push(...resultat);
-    }
-
-    return joueurs;
+    return lignes
+        .slice(1)
+        .map(ligne => ligne.trim())
+        .filter(ligne => ligne !== "");
 }
 
 
-async function chargerResultatsDrive() {
+function convertirLigne(ligne, fichier) {
 
-    const adherents = await chargerAdherents();
+    let [rank, name, points, hitman] = ligne.split(",");
 
-    const joueursMTT = await chercherFichiersDrive(
-        DOSSIER_MTT,
-        "MTT"
-    );
-
-    const joueursSNG = await chercherFichiersDrive(
-        DOSSIER_SNG,
-        "SNG"
-    );
-
-    const joueursSNGT = await chercherFichiersDrive(
-        DOSSIER_SNGT,
-        "SNGT"
-    );
-
-    const joueursCASH = await chercherFichiersDrive(
-        DOSSIER_CASH,
-        "CASH"
-    );
-
-    const tousLesJoueurs = [
-        ...joueursMTT,
-        ...joueursSNG,
-        ...joueursSNGT,
-        ...joueursCASH
-    ];
-
-    console.log(tousLesJoueurs);
-
-
-    const classement = [];
-
-    for (const nom of adherents) {
-
-        const resultatsJoueur = tousLesJoueurs.filter(
-            joueur => joueur.name === nom
-        );
-
-        const totalPoints = resultatsJoueur.reduce(
-            (total, joueur) => total + joueur.points,
-            0
-        );
-
-        const totalHitman = tousLesJoueurs.filter(
-            joueur => joueur.hitman === nom
-        ).length;
-
-        classement.push({
-            name: nom,
-            points: totalPoints,
-            hitman: totalHitman
-        });
+    if (Number(rank) === 1) {
+        hitman = name;
     }
 
-    classement.sort((a, b) => b.points - a.points);
-
-    console.log(classement);
-
-    afficherClassement(classement);
+    return {
+        type: fichier.type,
+        fichier: fichier.name,
+        date: fichier.date,
+        rank: Number(rank),
+        name: name,
+        points: Number(points),
+        hitman: hitman
+    };
 }
 
-async function chargerCSVDrive(fichier) {
 
-    const url = fichier.webContentLink;
+async function chargerCSV(fichier) {
 
-    const reponse = await fetch(url);
-
+    const reponse = await fetch(fichier.path);
     const texteCSV = await reponse.text();
 
     const lignes = texteCSV.trim().split("\r\n");
@@ -117,74 +51,267 @@ async function chargerCSVDrive(fichier) {
 }
 
 
-const resultats = document.querySelector("#resultats");
+async function chargerResultats() {
 
-async function chargerAdherents() {
-    const reponse = await fetch("csv/adherents.csv");
-    const texteCSV = await reponse.text();
+    // 1. On récupère la liste des adhérents
+    const adherents = await chargerAdherents();
 
-    const lignes = texteCSV.trim().split("\r\n");
+    // 2. On récupère la liste des fichiers CSV
+    const reponse = await fetch("data/fichiers.json");
+    const fichiers = await reponse.json();
 
-    const adherents = lignes
-        .slice(1);
+    // 3. Tableau qui contient tous les résultats
+    const tousLesJoueurs = [];
 
-    return adherents;
-}
+    // 4. On charge chaque CSV
+    for (const fichier of fichiers) {
 
+        const resultats = await chargerCSV(fichier);
 
-
-function convertirLigne(ligne, fichier) {
-    let [rank, name, points, hitman] = ligne.split(",");
-
-    if (Number(rank) === 1) {
-        hitman = name;
+        tousLesJoueurs.push(...resultats);
     }
 
-    return {
-        type: fichier.type,
-        fichier: fichier.name,
-        rank: Number(rank),
-        name: name,
-        points: Number(points),
-        hitman: hitman
-    };
+    const resultatsPeriode = tousLesJoueurs.filter(
+        joueur => joueur.date >= DATE_DEBUT &&
+                  joueur.date <= DATE_FIN
+    );
+
+
+    console.log("Tous les résultats :", tousLesJoueurs);
+
+
+    // 5. Construction du classement
+    const classement = [];
+
+    for (const nom of adherents) {
+
+        const resultatsJoueur = resultatsPeriode.filter(
+            joueur => joueur.name === nom
+        );
+
+        // =========================
+        // TOTAL GENERAL
+        // =========================
+
+        const totalPoints = resultatsJoueur.reduce(
+            (total, joueur) => total + joueur.points,
+            0
+        );
+
+        const totalHitman = resultatsPeriode.filter(
+            joueur => joueur.hitman === nom
+        ).length;
+
+
+        // =========================
+        // STATISTIQUES PAR CATEGORIE
+        // =========================
+
+        const categories = {
+            MTT: {
+                participations: 0,
+                itm: 0,
+                victoires: 0,
+                points: 0
+            },
+
+            SNG: {
+                participations: 0,
+                itm: 0,
+                victoires: 0,
+                points: 0
+            },
+
+            SNGT: {
+                participations: 0,
+                itm: 0,
+                victoires: 0,
+                points: 0
+            },
+
+            CASH: {
+                participations: 0,
+                itm: 0,
+                victoires: 0,
+                points: 0
+            }
+        };
+
+
+        // On parcourt les résultats du joueur
+        for (const joueur of resultatsJoueur) {
+
+            const categorie = categories[joueur.type];
+
+            // Participation
+            categorie.participations++;
+
+            // Points
+            categorie.points += joueur.points;
+
+
+            // MTT
+            if (joueur.type === "MTT") {
+
+                if (joueur.rank <= 6) {
+                    categorie.itm++;
+                }
+
+                if (joueur.rank === 1) {
+                    categorie.victoires++;
+                }
+            }
+
+
+            // SNG
+            if (joueur.type === "SNG") {
+
+                if (joueur.points >= 100) {
+                    categorie.itm++;
+                }
+
+                if (joueur.rank === 1) {
+                    categorie.victoires++;
+                }
+            }
+
+
+            // SNG Turbo
+            if (joueur.type === "SNGT") {
+
+                if (joueur.points >= 100) {
+                    categorie.itm++;
+                }
+
+                if (joueur.rank === 1) {
+                    categorie.victoires++;
+                }
+            }
+
+
+            // CASH
+            // Pas d'ITM ni de victoire
+        }
+
+
+        // =========================
+        // AJOUT AU CLASSEMENT
+        // =========================
+
+        classement.push({
+            name: nom,
+            points: totalPoints,
+            hitman: totalHitman,
+            categories: categories
+        });
+    }
+
+
+    // 6. Classement général par points
+    classement.sort(
+        (a, b) => b.points - a.points
+    );
+
+    console.log("Classement :", classement);
+
+
+    // 7. Affichage
+    afficherClassement(classement);
 }
 
 
 
 function afficherClassement(classement) {
+
+    const resultats = document.querySelector("#resultats");
+
     let html = `
         <table>
             <thead>
                 <tr>
                     <th>Rang</th>
                     <th>Joueur</th>
-                    <th>Points</th>
-                    <th>Hitman</th>
+
+                    <th>Total points</th>
+                    <th>Kills</th>
+
+                    <th>MTT</th>
+                    <th>SnG</th>
+                    <th>SnG Turbo</th>
+                    <th>Cash</th>
                 </tr>
             </thead>
+
             <tbody>
     `;
 
+
     classement.forEach((joueur, index) => {
+
+        const mtt = joueur.categories.MTT;
+        const sng = joueur.categories.SNG;
+        const sngt = joueur.categories.SNGT;
+        const cash = joueur.categories.CASH;
+
+
         html += `
             <tr>
+
                 <td>${index + 1}</td>
+
                 <td>${joueur.name}</td>
+
                 <td>${joueur.points}</td>
+
                 <td>${joueur.hitman}</td>
+
+
+                <td>
+                    ${mtt.participations} participations<br>
+                    ${mtt.itm} ITM<br>
+                    ${mtt.victoires} victoire(s)<br>
+                    ${mtt.points} points
+                </td>
+
+
+                <td>
+                    ${sng.participations} participations<br>
+                    ${sng.itm} ITM<br>
+                    ${sng.victoires} victoire(s)<br>
+                    ${sng.points} points
+                </td>
+
+
+                <td>
+                    ${sngt.participations} participations<br>
+                    ${sngt.itm} ITM<br>
+                    ${sngt.victoires} victoire(s)<br>
+                    ${sngt.points} points
+                </td>
+
+
+                <td>
+                    ${cash.participations} participations<br>
+                    ${cash.points} points
+                </td>
+
             </tr>
         `;
+
     });
+
 
     html += `
             </tbody>
         </table>
     `;
 
+
     resultats.innerHTML = html;
 }
 
 
 
-chargerResultatsDrive();
+
+// Lancement du programme
+chargerResultats();

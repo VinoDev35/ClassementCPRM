@@ -1,0 +1,255 @@
+/* ========================================
+   CLASSEMENT CPRM
+   ======================================== */
+
+:root {
+    --vert-cprm: #0F7A43;
+    --vert-fonce: #0B5D34;
+    --vert-clair: #EAF5EF;
+    --noir: #171717;
+    --gris-fond: #F5F6F5;
+    --gris-bordure: #DDE2DE;
+    --gris-texte: #68716C;
+    --blanc: #FFFFFF;
+}
+
+
+/* ========================================
+   BASE
+   ======================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--gris-fond);
+    color: var(--noir);
+}
+
+
+/* ========================================
+   CONTENEUR
+   ======================================== */
+
+#resultats {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 15px;
+}
+
+
+/* ========================================
+   TABLEAU
+   ======================================== */
+
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--blanc);
+    border: 1px solid var(--gris-bordure);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+
+/* En-tête */
+
+thead {
+    background: var(--vert-cprm);
+    color: var(--blanc);
+}
+
+th {
+    padding: 13px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+}
+
+th:nth-child(2) {
+    text-align: left;
+}
+
+
+/* Corps */
+
+td {
+    padding: 12px 10px;
+    border-top: 1px solid var(--gris-bordure);
+    font-size: 14px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+
+/* Nom du joueur */
+
+td:nth-child(2) {
+    text-align: left;
+    font-weight: 700;
+}
+
+
+/* Rang */
+
+td:first-child {
+    width: 55px;
+    font-weight: 700;
+    color: var(--vert-cprm);
+}
+
+
+/* Points généraux */
+
+td:nth-child(3) {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+
+/* Hitman */
+
+td:nth-child(4) {
+    font-weight: 600;
+}
+
+
+/* ========================================
+   COLONNES CATEGORIES
+   ======================================== */
+
+td:nth-child(n+5) {
+    min-width: 145px;
+    line-height: 1.55;
+}
+
+
+/* Nom des catégories */
+
+th:nth-child(5),
+th:nth-child(6),
+th:nth-child(7),
+th:nth-child(8) {
+    font-size: 13px;
+}
+
+
+/* Alternance très légère */
+
+tbody tr:nth-child(even) {
+    background: #FAFBFA;
+}
+
+
+/* Survol */
+
+tbody tr:hover {
+    background: var(--vert-clair);
+}
+
+
+/* ========================================
+   PREMIER JOUEUR
+   ======================================== */
+
+tbody tr:first-child {
+    background: #F0F8F3;
+}
+
+tbody tr:first-child td:first-child {
+    color: var(--vert-fonce);
+    font-size: 16px;
+}
+
+
+/* ========================================
+   PETITE HIÉRARCHIE DANS LES STATS
+   ======================================== */
+
+/*
+   Les <br> permettent de garder :
+   participations
+   ITM
+   victoires
+   points
+
+   lisibles sans ajouter de HTML.
+*/
+
+td:nth-child(n+5) {
+    color: var(--gris-texte);
+}
+
+
+/* ========================================
+   RESPONSIVE / IFRAME
+   ======================================== */
+
+/*
+   Le tableau peut être plus large que
+   l'iframe : on permet le défilement
+   horizontal plutôt que de casser le tableau.
+*/
+
+#resultats {
+    overflow-x: auto;
+}
+
+
+/* ========================================
+   PETITS ÉCRANS
+   ======================================== */
+
+@media (max-width: 800px) {
+
+    #resultats {
+        padding: 8px;
+    }
+
+    table {
+        min-width: 900px;
+    }
+
+    th {
+        padding: 10px 8px;
+        font-size: 13px;
+    }
+
+    td {
+        padding: 10px 8px;
+        font-size: 13px;
+    }
+
+    td:nth-child(n+5) {
+        min-width: 130px;
+    }
+}
+
+
+/* ========================================
+   TRÈS PETITS ÉCRANS
+   ======================================== */
+
+@media (max-width: 500px) {
+
+    #resultats {
+        padding: 5px;
+    }
+
+    table {
+        min-width: 850px;
+    }
+}
+

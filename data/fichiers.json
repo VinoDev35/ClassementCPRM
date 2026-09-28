@@ -1,0 +1,51 @@
+[
+    {
+        "id": "local-001",
+        "name": "26-09-17_Deepstack1.csv",
+        "path": "csv/MTT/26-09-17_Deepstack1.csv",
+        "type": "MTT",
+        "date": "2026-09-17"
+    },
+    {
+        "id": "local-002",
+        "name": "26-09-24_SnG_#1.csv",
+        "path": "csv/SnG/26-09-24_SnG_1.csv",
+        "type": "SNG",
+        "date": "2026-09-24"
+    },
+    {
+        "id": "local-003",
+        "name": "26-09-24_SnG_#2.csv",
+        "path": "csv/SnG/26-09-24_SnG_2.csv",
+        "type": "SNG",
+        "date": "2026-09-24"
+    },
+    {
+        "id": "local-004",
+        "name": "26-09-24_SnG_#3.csv",
+        "path": "csv/SnG/26-09-24_SnG_3.csv",
+        "type": "SNG",
+        "date": "2026-09-24"
+    },
+    {
+        "id": "local-005",
+        "name": "26-09-17_SnG_Turbo_#1.csv",
+        "path": "csv/SnG Turbo/26-09-17_SnG_Turbo_1.csv",
+        "type": "SNGT",
+        "date": "2026-09-17"
+    },
+    {
+        "id": "local-006",
+        "name": "26-09-24_SnG_Turbo_#1.csv",
+        "path": "csv/SnG Turbo/26-09-24_SnG_Turbo_1.csv",
+        "type": "SNGT",
+        "date": "2026-09-24"
+    },
+    {
+        "id": "local-007",
+        "name": "26-09-24 SnG Turbo #2.csv",
+        "path": "csv/SnG Turbo/26-09-24_SnG_Turbo_2.csv",
+        "type": "SNGT",
+        "date": "2026-09-24"
+    }
+]
