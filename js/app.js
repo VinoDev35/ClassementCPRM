@@ -7,7 +7,7 @@ async function chargerAdherents() {
     const reponse = await fetch("csv/adherents.csv");
     const texte = await reponse.text();
 
-    const lignes = texte.trim().split("\r\n");
+    const lignes = texte.trim().split(/\r?\n/);
 
     return lignes
         .slice(1)
@@ -41,11 +41,13 @@ async function chargerCSV(fichier) {
     const reponse = await fetch(fichier.path);
     const texteCSV = await reponse.text();
 
-    const lignes = texteCSV.trim().split("\r\n");
+    const lignes = texteCSV.trim().split(/\r?\n/);
 
     const joueurs = lignes
         .slice(1)
         .map(ligne => convertirLigne(ligne, fichier));
+
+    console.log("Joueurs du fichier :", fichier.name, joueurs);
 
     return joueurs;
 }
