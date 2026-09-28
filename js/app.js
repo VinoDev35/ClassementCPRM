@@ -47,8 +47,6 @@ async function chargerCSV(fichier) {
         .slice(1)
         .map(ligne => convertirLigne(ligne, fichier));
 
-    console.log("Joueurs du fichier :", fichier.name, joueurs);
-
     return joueurs;
 }
 
