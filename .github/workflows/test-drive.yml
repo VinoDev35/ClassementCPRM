@@ -1,56 +1,42 @@
-
-name: Test accès anonyme Google Drive
+name: Synchronisation Google Drive
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 10 * * *"
+
+permissions:
+  contents: write
 
 jobs:
-  test-drive:
+  synchroniser:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Tester l'accès au dossier public
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Synchroniser les résultats depuis Google Drive
         env:
-          DRIVE_FOLDER_ID: 1FMTwRWpuvDUxCMO4cTg34Y2KmHY-kU6k
           GOOGLE_DRIVE_API_KEY: ${{ secrets.GOOGLE_DRIVE_API_KEY }}
+        run: python scripts/sync_drive.py
+
+      - name: Publier les modifications
         run: |
-          python - <<'PY'
-          import os
-          import json
-          import urllib.request
-          import urllib.error
-          import urllib.parse
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          folder_id = os.environ["DRIVE_FOLDER_ID"]
-          api_key = os.environ["GOOGLE_DRIVE_API_KEY"]
-
-          params = urllib.parse.urlencode({
-              "q": f"'{folder_id}' in parents and trashed = false",
-              "fields": "files(id,name,mimeType)",
-              "pageSize": 100,
-              "key": api_key,
-          })
-
-          url = "https://www.googleapis.com/drive/v3/files?" + params
-          request = urllib.request.Request(
-              url,
-              headers={"User-Agent": "CPRM-Drive-Test"}
-          )
-
-          try:
-              with urllib.request.urlopen(request, timeout=20) as response:
-                  data = json.loads(response.read().decode("utf-8"))
-                  files = data.get("files", [])
-                  print("Code HTTP :", response.status)
-                  print("Nombre d'éléments :", len(files))
-                  for item in files:
-                      print(
-                          item.get("name"),
-                          "|", item.get("mimeType"),
-                          "| ID :", item.get("id")
-                      )
-          except urllib.error.HTTPError as error:
-              print("Code HTTP :", error.code)
-              print(error.read().decode("utf-8"))
-              raise SystemExit(1)
-          PY
+            git add csv data/fichiers.json
+            git commit -m "Synchronisation des résultats CPRM depuis Drive"
+            git push
+          else
+            echo "Aucune modification à publier."
+          fi
