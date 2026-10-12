@@ -1,51 +1,74 @@
 [
     {
-        "id": "local-001",
+        "id": "drive-1hVfDcclsQUOYVF5F27syOclKbxM9FhLf",
+        "name": "01-10-17_Deepstack2.csv",
+        "path": "csv/MTT/01-10-17_Deepstack2.csv",
+        "type": "MTT",
+        "date": "2001-10-17",
+        "classement": true
+    },
+    {
+        "id": "drive-1I9cV3FLvIikrSal7G8wDuksd4YnDucQi",
         "name": "26-09-17_Deepstack1.csv",
         "path": "csv/MTT/26-09-17_Deepstack1.csv",
         "type": "MTT",
-        "date": "2026-09-17"
+        "date": "2026-09-17",
+        "classement": true
     },
     {
-        "id": "local-002",
-        "name": "26-09-24_SnG_#1.csv",
+        "id": "drive-1Nl9SX5jvkQ7y_4gtgMauBJuxjXFchNyA",
+        "name": "26-09-17_SnG_Turbo_1.csv",
+        "path": "csv/SnG%20Turbo/26-09-17_SnG_Turbo_1.csv",
+        "type": "SNGT",
+        "date": "2026-09-17",
+        "classement": true
+    },
+    {
+        "id": "drive-1D04fmMqn0q94g3oIGHB6Khz4J8b6pHpw",
+        "name": "26-09-24_SnG_1.csv",
         "path": "csv/SnG/26-09-24_SnG_1.csv",
         "type": "SNG",
-        "date": "2026-09-24"
+        "date": "2026-09-24",
+        "classement": true
     },
     {
-        "id": "local-003",
-        "name": "26-09-24_SnG_#2.csv",
+        "id": "drive-1YjcsI7J8dqyYeWe8M3Osg8HJ3Vn9wdLl",
+        "name": "26-09-24_SnG_2.csv",
         "path": "csv/SnG/26-09-24_SnG_2.csv",
         "type": "SNG",
-        "date": "2026-09-24"
+        "date": "2026-09-24",
+        "classement": true
     },
     {
-        "id": "local-004",
-        "name": "26-09-24_SnG_#3.csv",
+        "id": "drive-1QLUG8-KKMuOmOgJzhAt-FG5hTCMXO5Yw",
+        "name": "26-09-24_SnG_3.csv",
         "path": "csv/SnG/26-09-24_SnG_3.csv",
         "type": "SNG",
-        "date": "2026-09-24"
+        "date": "2026-09-24",
+        "classement": true
     },
     {
-        "id": "local-005",
-        "name": "26-09-17_SnG_Turbo_#1.csv",
-        "path": "csv/SnG Turbo/26-09-17_SnG_Turbo_1.csv",
+        "id": "drive-1bNW8My9CMGB1ncGTfpcLA0JdHDdH_ygT",
+        "name": "26-09-24_SnG_Turbo_1.csv",
+        "path": "csv/SnG%20Turbo/26-09-24_SnG_Turbo_1.csv",
         "type": "SNGT",
-        "date": "2026-09-17"
+        "date": "2026-09-24",
+        "classement": true
     },
     {
-        "id": "local-006",
-        "name": "26-09-24_SnG_Turbo_#1.csv",
-        "path": "csv/SnG Turbo/26-09-24_SnG_Turbo_1.csv",
+        "id": "drive-1I9k7WPB8QYCPFXDuHZyXIp3Og4_1X9uE",
+        "name": "26-09-24_SnG_Turbo_2.csv",
+        "path": "csv/SnG%20Turbo/26-09-24_SnG_Turbo_2.csv",
         "type": "SNGT",
-        "date": "2026-09-24"
+        "date": "2026-09-24",
+        "classement": true
     },
     {
-        "id": "local-007",
-        "name": "26-09-24 SnG Turbo #2.csv",
-        "path": "csv/SnG Turbo/26-09-24_SnG_Turbo_2.csv",
-        "type": "SNGT",
-        "date": "2026-09-24"
+        "id": "drive-1yxvyGF937dGreKTy4bt0119Gm38bZlfb",
+        "name": "26-10-03_Saturday1_Main.csv",
+        "path": "csv/events/26-10-03_Saturday1_Main.csv",
+        "type": "EVENT",
+        "date": "2026-10-03",
+        "classement": false
     }
 ]
