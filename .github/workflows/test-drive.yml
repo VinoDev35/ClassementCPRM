@@ -1,0 +1,41 @@
+
+name: Test accès anonyme Google Drive
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-drive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Tester l'accès au dossier public
+        env:
+          DRIVE_FOLDER_ID: 1FMTwRWpuvDUxCMO4cTg34Y2KmHY-kU6k
+        run: |
+          python - <<'PY'
+          import os
+          import urllib.request
+          import urllib.error
+
+          folder_id = os.environ["DRIVE_FOLDER_ID"]
+          url = (
+              "https://www.googleapis.com/drive/v3/files"
+              f"?q=%27{folder_id}%27+in+parents"
+              "&fields=files(id%2Cname%2CmimeType)"
+              "&pageSize=100"
+          )
+
+          try:
+              request = urllib.request.Request(
+                  url,
+                  headers={"User-Agent": "CPRM-Drive-Test"}
+              )
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  print("Code HTTP :", response.status)
+                  print(response.read().decode("utf-8"))
+          except urllib.error.HTTPError as error:
+              print("Code HTTP :", error.code)
+              print(error.read().decode("utf-8"))
+              raise SystemExit(1)
+          PY
