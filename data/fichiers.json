@@ -70,5 +70,37 @@
         "type": "EVENT",
         "date": "2026-10-03",
         "classement": false
+    },
+    {
+        "id": "drive-18fBysfp7mpNU1I1lmYGK6OiGvPXiPUZ8",
+        "name": "26-10-08_SNGTurbo_1.csv",
+        "path": "csv/SnG%20Turbo/26-10-08_SNGTurbo_1.csv",
+        "type": "SNGT",
+        "date": "2026-10-08",
+        "classement": true
+    },
+    {
+        "id": "drive-18l-UcS9Yzt7pHHIM28mZJWd8s5t0M0zZ",
+        "name": "26-10-08_SNG_1.csv",
+        "path": "csv/SnG/26-10-08_SNG_1.csv",
+        "type": "SNG",
+        "date": "2026-10-08",
+        "classement": true
+    },
+    {
+        "id": "drive-1C7s21aOnvCqVb8wxrFtmAZlrrlRFKGGd",
+        "name": "26-10-08_SNG_2.csv",
+        "path": "csv/SnG/26-10-08_SNG_2.csv",
+        "type": "SNG",
+        "date": "2026-10-08",
+        "classement": true
+    },
+    {
+        "id": "drive-1qx16gHpvJfLnMJZxFRMBcLT3WnneVscy",
+        "name": "26-10-08_SNG_3.csv",
+        "path": "csv/SnG/26-10-08_SNG_3.csv",
+        "type": "SNG",
+        "date": "2026-10-08",
+        "classement": true
     }
 ]
