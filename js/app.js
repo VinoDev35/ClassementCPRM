@@ -1,226 +1,53 @@
-
 const DATE_DEBUT = "2026-09-01";
 const DATE_FIN = "2027-06-30";
 
+const PERIODES = [
+    {
+        id: "P1",
+        nom: "Période 1 — Rentrée à Toussaint",
+        debut: "2026-09-01",
+        fin: "2026-10-16"
+    },
+    {
+        id: "P2",
+        nom: "Période 2 — Toussaint à Noël",
+        debut: "2026-11-02",
+        fin: "2026-12-18"
+    },
+    {
+        id: "P3",
+        nom: "Période 3 — Noël à hiver",
+        debut: "2027-01-04",
+        fin: "2027-02-19"
+    },
+    {
+        id: "P4",
+        nom: "Période 4 — Hiver à printemps",
+        debut: "2027-03-08",
+        fin: "2027-04-16"
+    },
+    {
+        id: "P5",
+        nom: "Période 5 — Printemps à fin de saison",
+        debut: "2027-05-03",
+        fin: "2027-06-30"
+    }
+];
+
 let fichiersCharges = [];
 let resultatsParFichier = new Map();
+let tousLesResultats = [];
+let adherents = [];
+
+let categorieClassementActive = "GENERAL";
+let formatTournoiActif = "MTT";
+
+const $ = selector => document.querySelector(selector);
 
 
-// =========================
-// ADHERENTS
-// =========================
-
-async function chargerAdherents() {
-    const reponse = await fetch("csv/adherents.csv");
-
-    if (!reponse.ok) {
-        throw new Error("Impossible de charger adherents.csv");
-    }
-
-    const texte = await reponse.text();
-
-    return texte
-        .trim()
-        .split(/\r?\n/)
-        .slice(1)
-        .map(ligne => ligne.trim())
-        .filter(ligne => ligne !== "");
-}
-
-
-// =========================
-// LECTURE DES CSV
-// =========================
-
-function convertirLigne(ligne, fichier) {
-    const [rank, name, points, hitman] = ligne.split(",");
-
-    if (!name || !name.trim()) {
-        return null;
-    }
-
-    const nom = name.trim();
-
-    return {
-        type: fichier.type,
-        fichier: fichier.name,
-        date: fichier.date,
-        rank: Number(rank),
-        name: nom,
-        points: Number(points),
-        hitman: Number(rank) === 1 ? nom : (hitman || "").trim()
-    };
-}
-
-
-async function chargerCSV(fichier) {
-    const reponse = await fetch(fichier.path);
-
-    if (!reponse.ok) {
-        throw new Error(
-            `Impossible de charger ${fichier.path} : HTTP ${reponse.status}`
-        );
-    }
-
-    const texteCSV = await reponse.text();
-    const lignes = texteCSV.trim().split(/\r?\n/);
-
-    return lignes
-        .slice(1)
-        .filter(ligne => ligne.trim() !== "")
-        .map(ligne => convertirLigne(ligne, fichier))
-        .filter(joueur => joueur !== null);
-}
-
-
-// =========================
-// CLASSEMENT
-// =========================
-
-function participeAuClassement(fichier) {
-    // Compatibilité avec l'ancien fichiers.json :
-    // les anciennes entrées sans propriété "classement"
-    // restent prises en compte, sauf les événements.
-    return fichier.classement !== false &&
-           fichier.type !== "EVENT";
-}
-
-
-async function chargerResultats() {
-    try {
-        const adherents = await chargerAdherents();
-
-        const reponse = await fetch("data/fichiers.json");
-
-        if (!reponse.ok) {
-            throw new Error("Impossible de charger data/fichiers.json");
-        }
-
-        fichiersCharges = await reponse.json();
-        resultatsParFichier = new Map();
-
-        const tousLesJoueurs = [];
-
-        // Charger chaque tournoi une seule fois.
-        for (const fichier of fichiersCharges) {
-            const resultats = await chargerCSV(fichier);
-
-            resultatsParFichier.set(fichier.id, resultats);
-            tousLesJoueurs.push(...resultats);
-        }
-
-        // Seuls les fichiers officiels alimentent le classement.
-        const resultatsOfficiels = tousLesJoueurs.filter(
-            joueur => {
-                const fichier = fichiersCharges.find(
-                    element => element.name === joueur.fichier &&
-                               element.date === joueur.date
-                );
-
-                return fichier && participeAuClassement(fichier);
-            }
-        );
-
-        // Filtrer la période du classement.
-        const resultatsPeriode = resultatsOfficiels.filter(
-            joueur => joueur.date >= DATE_DEBUT &&
-                      joueur.date <= DATE_FIN
-        );
-
-        const classement = [];
-
-        for (const nom of adherents) {
-            const resultatsJoueur = resultatsPeriode.filter(
-                joueur => joueur.name === nom
-            );
-
-            const totalPoints = resultatsJoueur.reduce(
-                (total, joueur) => total + joueur.points,
-                0
-            );
-
-            const totalHitman = resultatsPeriode.filter(
-                joueur => joueur.hitman === nom
-            ).length;
-
-            const categories = {
-                MTT: {
-                    participations: 0,
-                    itm: 0,
-                    victoires: 0,
-                    points: 0
-                },
-                SNG: {
-                    participations: 0,
-                    itm: 0,
-                    victoires: 0,
-                    points: 0
-                },
-                SNGT: {
-                    participations: 0,
-                    itm: 0,
-                    victoires: 0,
-                    points: 0
-                },
-                CASH: {
-                    participations: 0,
-                    itm: 0,
-                    victoires: 0,
-                    points: 0
-                }
-            };
-
-            for (const joueur of resultatsJoueur) {
-                const categorie = categories[joueur.type];
-
-                // Une catégorie inconnue ne doit pas faire planter
-                // le classement.
-                if (!categorie) {
-                    continue;
-                }
-
-                categorie.participations++;
-                categorie.points += joueur.points;
-
-                if (joueur.type === "MTT") {
-                    if (joueur.rank <= 6) categorie.itm++;
-                    if (joueur.rank === 1) categorie.victoires++;
-                }
-
-                if (joueur.type === "SNG" ||
-                    joueur.type === "SNGT") {
-                    if (joueur.points >= 100) categorie.itm++;
-                    if (joueur.rank === 1) categorie.victoires++;
-                }
-            }
-
-            classement.push({
-                name: nom,
-                points: totalPoints,
-                hitman: totalHitman,
-                categories
-            });
-        }
-
-        classement.sort((a, b) => b.points - a.points);
-
-        afficherClassement(classement);
-        afficherCatalogue();
-
-    } catch (erreur) {
-        console.error("Erreur de chargement :", erreur);
-
-        document.querySelector("#resultats").innerHTML = `
-            <p>Impossible de charger les résultats.
-            Consulte la console pour plus de détails.</p>
-        `;
-    }
-}
-
-
-// =========================
-// AFFICHAGE DU CLASSEMENT
-// =========================
+// ========================================
+// OUTILS
+// ========================================
 
 function echapperHTML(valeur) {
     return String(valeur ?? "").replace(/[&<>"']/g, caractere => ({
@@ -232,13 +59,399 @@ function echapperHTML(valeur) {
     })[caractere]);
 }
 
+function formaterDate(date) {
+    if (!date) return "";
 
-function afficherClassement(classement) {
-    const resultats = document.querySelector("#resultats");
+    const [annee, mois, jour] = date.split("-");
+    return `${jour}/${mois}/${annee}`;
+}
 
-    let html = `
-        <section>
-            <h2>Classement général</h2>
+function nettoyerNomTournoi(nom) {
+    return String(nom ?? "")
+        .replace(/\.(csv|txt)$/i, "")
+        .replace(/^\d{2,4}[-_]\d{2}[-_]\d{2}[_-]?/, "")
+        .replace(/_/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function nomFormat(type) {
+    const formats = {
+        MTT: "MTT",
+        SNG: "SnG",
+        SNGT: "SnG Turbo",
+        CASH: "Cash",
+        EVENT: "Événement"
+    };
+
+    return formats[type] || type || "";
+}
+
+function nomFichier(fichier) {
+    return nettoyerNomTournoi(fichier.name);
+}
+
+function comparerNoms(a, b) {
+    return a.localeCompare(b, "fr", {
+        sensitivity: "base"
+    });
+}
+
+
+// ========================================
+// LECTURE DES CSV
+// ========================================
+
+function convertirLigne(ligne, fichier) {
+    const colonnes = ligne.split(",");
+    const [rank, name, points, hitman] = colonnes;
+
+    if (!name || !name.trim()) {
+        return null;
+    }
+
+    const nom = name.trim();
+    const rang = Number(rank);
+
+    return {
+        type: fichier.type,
+        fichier: fichier.name,
+        fichierId: fichier.id,
+        date: fichier.date,
+        rank: rang,
+        name: nom,
+        points: Number(points) || 0,
+        hitman: rang === 1
+            ? nom
+            : (hitman || "").trim()
+    };
+}
+
+async function chargerAdherents() {
+    const reponse = await fetch("csv/adherents.csv");
+
+    if (!reponse.ok) {
+        throw new Error("Impossible de charger csv/adherents.csv");
+    }
+
+    const texte = await reponse.text();
+
+    return texte
+        .trim()
+        .split(/\r?\n/)
+        .slice(1)
+        .map(ligne => ligne.trim())
+        .filter(Boolean)
+        .map(ligne => ligne.split(",")[0].trim())
+        .filter(Boolean);
+}
+
+async function chargerCSV(fichier) {
+    const reponse = await fetch(fichier.path);
+
+    if (!reponse.ok) {
+        throw new Error(
+            `Impossible de charger ${fichier.path} : HTTP ${reponse.status}`
+        );
+    }
+
+    const texte = await reponse.text();
+    const lignes = texte.trim().split(/\r?\n/);
+
+    return lignes
+        .slice(1)
+        .filter(ligne => ligne.trim())
+        .map(ligne => convertirLigne(ligne, fichier))
+        .filter(Boolean);
+}
+
+
+// ========================================
+// CLASSEMENTS
+// ========================================
+
+function participeAuClassement(fichier) {
+    return fichier.classement !== false &&
+        fichier.type !== "EVENT";
+}
+
+function resultatEstOfficiel(resultat) {
+    const fichier = fichiersCharges.find(
+        f => String(f.id) === String(resultat.fichierId)
+    );
+
+    return fichier &&
+        participeAuClassement(fichier) &&
+        resultat.date >= DATE_DEBUT &&
+        resultat.date <= DATE_FIN;
+}
+
+function resultatDansDates(resultat, debut, fin) {
+    return (!debut || resultat.date >= debut) &&
+        (!fin || resultat.date <= fin);
+}
+
+function filtrerResultatsOfficiels(
+    debut = DATE_DEBUT,
+    fin = DATE_FIN
+) {
+    return tousLesResultats.filter(resultat =>
+        resultatEstOfficiel(resultat) &&
+        resultatDansDates(resultat, debut, fin)
+    );
+}
+
+function calculerClassement(resultats, noms = adherents) {
+    const classement = noms.map(nom => {
+        const resultatsJoueur = resultats.filter(
+            resultat => resultat.name === nom
+        );
+
+        const categories = {
+            MTT: {
+                participations: 0,
+                itm: 0,
+                victoires: 0,
+                points: 0
+            },
+            SNG: {
+                participations: 0,
+                itm: 0,
+                victoires: 0,
+                points: 0
+            },
+            SNGT: {
+                participations: 0,
+                itm: 0,
+                victoires: 0,
+                points: 0
+            },
+            CASH: {
+                participations: 0,
+                itm: 0,
+                victoires: 0,
+                points: 0
+            }
+        };
+
+        for (const resultat of resultatsJoueur) {
+            const categorie = categories[resultat.type];
+
+            if (!categorie) continue;
+
+            categorie.participations++;
+            categorie.points += resultat.points;
+
+            if (resultat.type === "MTT") {
+                if (resultat.rank <= 6) {
+                    categorie.itm++;
+                }
+
+                if (resultat.rank === 1) {
+                    categorie.victoires++;
+                }
+            } else if (
+                resultat.type === "SNG" ||
+                resultat.type === "SNGT"
+            ) {
+                if (resultat.points >= 100) {
+                    categorie.itm++;
+                }
+
+                if (resultat.rank === 1) {
+                    categorie.victoires++;
+                }
+            }
+        }
+
+        return {
+            name: nom,
+
+            points: resultatsJoueur.reduce(
+                (total, resultat) => total + resultat.points,
+                0
+            ),
+
+            hitman: resultats.filter(
+                resultat => resultat.hitman === nom
+            ).length,
+
+            categories
+        };
+    });
+
+    return classement.sort((a, b) =>
+        b.points - a.points ||
+        comparerNoms(a.name, b.name)
+    );
+}
+
+
+// ========================================
+// LIENS VERS LES JOUEURS
+// ========================================
+
+function lienJoueur(nom) {
+    return `
+        <button
+            type="button"
+            class="player-link"
+            data-player="${echapperHTML(nom)}"
+        >
+            ${echapperHTML(nom)}
+        </button>
+    `;
+}
+
+
+// ========================================
+// TABLEAUX DE CLASSEMENT
+// ========================================
+
+function creerTableauClassement(classement, mode = "GENERAL") {
+    if (!classement.length) {
+        return `
+            <p class="empty-state">
+                Aucun joueur dans ce classement.
+            </p>
+        `;
+    }
+
+    if (
+        mode === "MTT" ||
+        mode === "SNG" ||
+        mode === "CASH"
+    ) {
+        const types = mode === "SNG"
+            ? ["SNG", "SNGT"]
+            : [mode];
+
+        const lignes = classement.map(joueur => {
+            const stats = types.map(type => joueur.categories[type]);
+
+            const participations = stats.reduce(
+                (total, categorie) =>
+                    total + categorie.participations,
+                0
+            );
+
+            const points = stats.reduce(
+                (total, categorie) =>
+                    total + categorie.points,
+                0
+            );
+
+            const itm = stats.reduce(
+                (total, categorie) =>
+                    total + categorie.itm,
+                0
+            );
+
+            const victoires = stats.reduce(
+                (total, categorie) =>
+                    total + categorie.victoires,
+                0
+            );
+
+            return {
+                joueur,
+                participations,
+                points,
+                itm,
+                victoires
+            };
+        })
+        .filter(item => item.participations > 0)
+        .sort((a, b) =>
+            b.points - a.points ||
+            comparerNoms(a.joueur.name, b.joueur.name)
+        );
+
+        if (!lignes.length) {
+            return `
+                <p class="empty-state">
+                    Aucun résultat pour cette catégorie.
+                </p>
+            `;
+        }
+
+        return `
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rang</th>
+                            <th>Joueur</th>
+                            <th>Points</th>
+                            <th>Participations</th>
+                            <th>ITM</th>
+                            <th>Victoires</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${lignes.map((item, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${lienJoueur(item.joueur.name)}</td>
+                                <td>${item.points}</td>
+                                <td>${item.participations}</td>
+                                <td>${item.itm}</td>
+                                <td>${item.victoires}</td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    const lignes = classement.map((joueur, index) => {
+        const {
+            MTT,
+            SNG,
+            SNGT,
+            CASH
+        } = joueur.categories;
+
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${lienJoueur(joueur.name)}</td>
+                <td>${joueur.points}</td>
+                <td>${joueur.hitman}</td>
+
+                <td class="stats-cell">
+                    ${MTT.participations} participations<br>
+                    ${MTT.itm} ITM<br>
+                    ${MTT.victoires} victoire(s)<br>
+                    ${MTT.points} points
+                </td>
+
+                <td class="stats-cell">
+                    ${SNG.participations} participations<br>
+                    ${SNG.itm} ITM<br>
+                    ${SNG.victoires} victoire(s)<br>
+                    ${SNG.points} points
+                </td>
+
+                <td class="stats-cell">
+                    ${SNGT.participations} participations<br>
+                    ${SNGT.itm} ITM<br>
+                    ${SNGT.victoires} victoire(s)<br>
+                    ${SNGT.points} points
+                </td>
+
+                <td class="stats-cell">
+                    ${CASH.participations} participations<br>
+                    ${CASH.points} points
+                </td>
+            </tr>
+        `;
+    }).join("");
+
+    return `
+        <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
@@ -252,197 +465,554 @@ function afficherClassement(classement) {
                         <th>Cash</th>
                     </tr>
                 </thead>
+
                 <tbody>
-    `;
-
-    classement.forEach((joueur, index) => {
-        const mtt = joueur.categories.MTT;
-        const sng = joueur.categories.SNG;
-        const sngt = joueur.categories.SNGT;
-        const cash = joueur.categories.CASH;
-
-        html += `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${echapperHTML(joueur.name)}</td>
-                <td>${joueur.points}</td>
-                <td>${joueur.hitman}</td>
-                <td>
-                    ${mtt.participations} participations<br>
-                    ${mtt.itm} ITM<br>
-                    ${mtt.victoires} victoire(s)<br>
-                    ${mtt.points} points
-                </td>
-                <td>
-                    ${sng.participations} participations<br>
-                    ${sng.itm} ITM<br>
-                    ${sng.victoires} victoire(s)<br>
-                    ${sng.points} points
-                </td>
-                <td>
-                    ${sngt.participations} participations<br>
-                    ${sngt.itm} ITM<br>
-                    ${sngt.victoires} victoire(s)<br>
-                    ${sngt.points} points
-                </td>
-                <td>
-                    ${cash.participations} participations<br>
-                    ${cash.points} points
-                </td>
-            </tr>
-        `;
-    });
-
-    html += `
+                    ${lignes}
                 </tbody>
             </table>
-        </section>
+        </div>
     `;
-
-    resultats.innerHTML = html;
 }
 
+function afficherClassementGeneral() {
+    const resultats = filtrerResultatsOfficiels();
+    const classement = calculerClassement(resultats);
 
-// =========================
-// CATALOGUE DES TOURNOIS
-// =========================
+    $("#classementGeneral").innerHTML = `
+        <h3>
+            ${{
+                GENERAL: "Classement général",
+                MTT: "Classement MTT",
+                SNG: "Classement SnG",
+                CASH: "Classement Cash"
+            }[categorieClassementActive]}
+        </h3>
 
-function afficherCatalogue() {
-    const resultats = document.querySelector("#resultats");
-
-    // Trier du tournoi le plus récent au plus ancien.
-    const fichiers = [...fichiersCharges].sort(
-        (a, b) => b.date.localeCompare(a.date) ||
-                  a.name.localeCompare(b.name)
-    );
-
-    let html = `
-        <section class="catalogue-tournois">
-            <h2>Résultats des tournois</h2>
-            <p>
-                Consulte les résultats d'un tournoi,
-                y compris les événements hors classement.
-            </p>
-
-            <label for="selectionTournoi">Choisir un tournoi :</label>
-
-            <select id="selectionTournoi">
+        ${creerTableauClassement(
+            classement,
+            categorieClassementActive
+        )}
     `;
+}
 
-    fichiers.forEach((fichier, index) => {
-        const categorie = fichier.type === "EVENT"
-            ? "Événement hors classement"
-            : fichier.type;
+function activerCategorieClassement(categorie) {
+    categorieClassementActive = categorie;
 
-        html += `
-            <option value="${index}">
-                ${echapperHTML(fichier.date)} — 
-                ${echapperHTML(fichier.name)} 
-                (${echapperHTML(categorie)})
-            </option>
-        `;
+    document.querySelectorAll("[data-category]").forEach(bouton => {
+        bouton.classList.toggle(
+            "active",
+            bouton.dataset.category === categorie
+        );
     });
 
-    html += `
-            </select>
-
-            <button id="afficherTournoi" type="button">
-                Afficher les résultats
-            </button>
-
-            <div id="resultatsTournoi"></div>
-        </section>
-    `;
-
-    resultats.insertAdjacentHTML("beforeend", html);
-
-    document.querySelector("#afficherTournoi").addEventListener(
-        "click",
-        () => {
-            const index = Number(
-                document.querySelector("#selectionTournoi").value
-            );
-
-            afficherResultatsTournoi(fichiers[index]);
-        }
-    );
-
-    // Afficher directement le tournoi le plus récent.
-    if (fichiers.length > 0) {
-        afficherResultatsTournoi(fichiers[0]);
-    }
+    afficherClassementGeneral();
 }
 
 
-function afficherResultatsTournoi(fichier) {
-    const conteneur = document.querySelector("#resultatsTournoi");
+// ========================================
+// CLASSEMENTS PAR PÉRIODE
+// ========================================
 
-    if (!fichier) {
-        conteneur.innerHTML = "<p>Aucun tournoi sélectionné.</p>";
+function initialiserPeriodes() {
+    $("#selectionPeriode").innerHTML = PERIODES.map(periode => `
+        <option value="${periode.id}">
+            ${echapperHTML(periode.nom)}
+            (${formaterDate(periode.debut)} au ${formaterDate(periode.fin)})
+        </option>
+    `).join("");
+}
+
+function afficherClassementPeriode() {
+    const periode = PERIODES.find(
+        p => p.id === $("#selectionPeriode").value
+    ) || PERIODES[0];
+
+    const resultats = filtrerResultatsOfficiels(
+        periode.debut,
+        periode.fin
+    );
+
+    const classement = calculerClassement(resultats);
+
+    $("#classementPeriode").innerHTML = `
+        <h3>${echapperHTML(periode.nom)}</h3>
+
+        <p>
+            ${formaterDate(periode.debut)}
+            au ${formaterDate(periode.fin)}
+        </p>
+
+        ${creerTableauClassement(classement, "GENERAL")}
+    `;
+}
+
+
+// ========================================
+// RÉSULTATS DES TOURNOIS
+// ========================================
+
+function activerFormatTournoi(format) {
+    formatTournoiActif = format;
+
+    document.querySelectorAll("[data-format]").forEach(bouton => {
+        bouton.classList.toggle(
+            "active",
+            bouton.dataset.format === format
+        );
+    });
+
+    $("#detailTournoi").innerHTML = "";
+    afficherListeTournois();
+}
+
+function afficherListeTournois() {
+    const debut = $("#dateDebutFiltre").value;
+    const fin = $("#dateFinFiltre").value;
+
+    const fichiers = [...fichiersCharges]
+        .filter(fichier => fichier.type === formatTournoiActif)
+        .filter(fichier =>
+            (!debut || fichier.date >= debut) &&
+            (!fin || fichier.date <= fin)
+        )
+        .sort((a, b) =>
+            (b.date || "").localeCompare(a.date || "") ||
+            comparerNoms(a.name, b.name)
+        );
+
+    if (!fichiers.length) {
+        $("#listeTournois").innerHTML = `
+            <p class="empty-state">
+                Aucun résultat pour ce format et cette période.
+            </p>
+        `;
+
+        $("#detailTournoi").innerHTML = "";
         return;
     }
 
-    const joueurs = resultatsParFichier.get(fichier.id) || [];
+    const groupes = new Map();
+
+    for (const fichier of fichiers) {
+        const date = fichier.date || "Date inconnue";
+
+        if (!groupes.has(date)) {
+            groupes.set(date, []);
+        }
+
+        groupes.get(date).push(fichier);
+    }
+
+    $("#listeTournois").innerHTML = [...groupes.entries()]
+        .map(([date, tournois]) => `
+            <section class="date-groupe">
+                <div class="date-entete">
+                    <h3>${formaterDate(date) || date}</h3>
+                    <span>
+                        ${tournois.length}
+                        ${tournois.length > 1 ? "tournois" : "tournoi"}
+                    </span>
+                </div>
+
+                ${tournois.map(fichier => `
+                    <div class="tournoi-ligne">
+                        <span class="tournoi-nom">
+                            ${echapperHTML(nomFichier(fichier))}
+                        </span>
+
+                        <button
+                            type="button"
+                            class="secondary-button"
+                            data-tournament="${echapperHTML(fichier.id)}"
+                        >
+                            Voir les résultats
+                        </button>
+                    </div>
+                `).join("")}
+            </section>
+        `)
+        .join("");
+}
+
+
+// ========================================
+// DÉTAIL D'UN TOURNOI
+// ========================================
+
+function afficherResultatsTournoi(fichierId) {
+    const fichier = fichiersCharges.find(
+        f => String(f.id) === String(fichierId)
+    );
+
+    if (!fichier) {
+        $("#detailTournoi").innerHTML = `
+            <p class="empty-state">Tournoi introuvable.</p>
+        `;
+        return;
+    }
+
+    const joueurs = [
+        ...(resultatsParFichier.get(fichier.id) || [])
+    ].sort((a, b) => a.rank - b.rank);
 
     const horsClassement = !participeAuClassement(fichier);
 
-    let html = `
-        <h3>${echapperHTML(fichier.name)}</h3>
-        <p>Date : ${echapperHTML(fichier.date)}</p>
-        <p>Catégorie : ${echapperHTML(fichier.type)}</p>
+    $("#detailTournoi").innerHTML = `
+        <h3>${echapperHTML(nomFichier(fichier))}</h3>
+
+        <p>
+            Date : ${formaterDate(fichier.date)}
+            — Format : ${echapperHTML(nomFormat(fichier.type))}
+        </p>
+
+        ${horsClassement ? `
+            <p class="notice">
+                Événement hors classement officiel.
+            </p>
+        ` : ""}
+
+        ${joueurs.length ? `
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Place</th>
+                            <th>Joueur</th>
+                            <th>Points</th>
+                            <th>Kills / Hitman</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${joueurs.map(joueur => `
+                            <tr>
+                                <td>${joueur.rank}</td>
+                                <td>${lienJoueur(joueur.name)}</td>
+                                <td>${joueur.points}</td>
+                                <td>${echapperHTML(joueur.hitman)}</td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            </div>
+        ` : `
+            <p class="empty-state">
+                Aucun résultat pour ce tournoi.
+            </p>
+        `}
     `;
 
-    if (horsClassement) {
-        html += `
-            <p><strong>Événement hors classement général</strong></p>
-        `;
-    }
-
-    if (joueurs.length === 0) {
-        html += "<p>Aucun résultat disponible pour ce tournoi.</p>";
-        conteneur.innerHTML = html;
-        return;
-    }
-
-    html += `
-        <table>
-            <thead>
-                <tr>
-                    <th>Rang</th>
-                    <th>Joueur</th>
-                    <th>Points</th>
-                    <th>Hitman</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-    const joueursTries = [...joueurs].sort(
-        (a, b) => a.rank - b.rank
-    );
-
-    for (const joueur of joueursTries) {
-        html += `
-            <tr>
-                <td>${joueur.rank}</td>
-                <td>${echapperHTML(joueur.name)}</td>
-                <td>${joueur.points}</td>
-                <td>${echapperHTML(joueur.hitman)}</td>
-            </tr>
-        `;
-    }
-
-    html += `
-            </tbody>
-        </table>
-    `;
-
-    conteneur.innerHTML = html;
+    $("#detailTournoi").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
 }
 
 
-// =========================
-// LANCEMENT
-// =========================
+// ========================================
+// HISTORIQUE PAR JOUEUR
+// ========================================
+
+function afficherHistoriqueJoueur(nom) {
+    if (!nom) {
+        $("#historiqueJoueur").innerHTML = `
+            <p class="empty-state">
+                Sélectionne un joueur pour consulter ses résultats.
+            </p>
+        `;
+        return;
+    }
+
+    // Seuls les adhérents peuvent avoir un historique affiché.
+    if (!adherents.includes(nom)) {
+        $("#historiqueJoueur").innerHTML = `
+            <p class="empty-state">
+                Ce joueur ne figure pas dans la liste des adhérents.
+            </p>
+        `;
+        return;
+    }
+
+    const historique = tousLesResultats
+        .filter(resultat => resultat.name === nom)
+        .sort((a, b) =>
+            b.date.localeCompare(a.date) ||
+            a.rank - b.rank
+        );
+
+    if (!historique.length) {
+        $("#historiqueJoueur").innerHTML = `
+            <h3>${echapperHTML(nom)}</h3>
+
+            <p class="empty-state">
+                Aucun résultat trouvé pour cet adhérent.
+            </p>
+        `;
+        return;
+    }
+
+    $("#historiqueJoueur").innerHTML = `
+        <h3>Historique de ${echapperHTML(nom)}</h3>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Nom du tournoi</th>
+                        <th>Format</th>
+                        <th>Place</th>
+                        <th>Points</th>
+                        <th>Nombre de kills</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    ${historique.map(resultat => {
+                        const kills = resultat.hitman === nom ? 1 : 0;
+
+                        const fichier = fichiersCharges.find(
+                            f => String(f.id) === String(resultat.fichierId)
+                        );
+
+                        return `
+                            <tr>
+                                <td>${formaterDate(resultat.date)}</td>
+                                <td>
+                                    ${echapperHTML(
+                                        fichier ? nomFichier(fichier) : resultat.fichier
+                                    )}
+                                </td>
+                                <td>${echapperHTML(nomFormat(resultat.type))}</td>
+                                <td>${resultat.rank}</td>
+                                <td>${resultat.points}</td>
+                                <td>${kills}</td>
+                            </tr>
+                        `;
+                    }).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function remplirSelectionJoueurs() {
+    const noms = [...adherents].sort(comparerNoms);
+
+    $("#selectionJoueur").innerHTML = `
+        <option value="">Sélectionner un joueur</option>
+
+        ${noms.map(nom => `
+            <option value="${echapperHTML(nom)}">
+                ${echapperHTML(nom)}
+            </option>
+        `).join("")}
+    `;
+}
+
+function afficherJoueursFiltres() {
+    const recherche = $("#rechercheJoueur")
+        .value
+        .trim()
+        .toLocaleLowerCase("fr");
+
+    const select = $("#selectionJoueur");
+    const selectionActuelle = select.value;
+
+    const noms = adherents
+        .filter(nom =>
+            nom.toLocaleLowerCase("fr").includes(recherche)
+        )
+        .sort(comparerNoms);
+
+    select.innerHTML = `
+        <option value="">Sélectionner un joueur</option>
+
+        ${noms.map(nom => `
+            <option value="${echapperHTML(nom)}">
+                ${echapperHTML(nom)}
+            </option>
+        `).join("")}
+    `;
+
+    if (noms.includes(selectionActuelle)) {
+        select.value = selectionActuelle;
+    } else {
+        select.value = "";
+        afficherHistoriqueJoueur("");
+    }
+}
+
+function ouvrirHistorique(nom) {
+    if (!adherents.includes(nom)) {
+        return;
+    }
+
+    activerVue("joueurs");
+
+    $("#rechercheJoueur").value = "";
+    afficherJoueursFiltres();
+
+    $("#selectionJoueur").value = nom;
+    afficherHistoriqueJoueur(nom);
+
+    $("#view-joueurs").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+
+// ========================================
+// NAVIGATION
+// ========================================
+
+function activerVue(nomVue) {
+    document.querySelectorAll(".tab").forEach(tab => {
+        const actif = tab.dataset.view === nomVue;
+
+        tab.classList.toggle("active", actif);
+        tab.setAttribute("aria-selected", String(actif));
+    });
+
+    document.querySelectorAll(".view").forEach(view => {
+        view.classList.toggle(
+            "active",
+            view.id === `view-${nomVue}`
+        );
+    });
+}
+
+
+// ========================================
+// ÉVÉNEMENTS
+// ========================================
+
+function connecterEvenements() {
+    document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            activerVue(tab.dataset.view);
+        });
+    });
+
+    document.querySelectorAll("[data-category]").forEach(bouton => {
+        bouton.addEventListener("click", () => {
+            activerCategorieClassement(bouton.dataset.category);
+        });
+    });
+
+    document.querySelectorAll("[data-format]").forEach(bouton => {
+        bouton.addEventListener("click", () => {
+            activerFormatTournoi(bouton.dataset.format);
+        });
+    });
+
+    $("#dateDebutFiltre").addEventListener(
+        "change",
+        afficherListeTournois
+    );
+
+    $("#dateFinFiltre").addEventListener(
+        "change",
+        afficherListeTournois
+    );
+
+    $("#effacerFiltres").addEventListener("click", () => {
+        $("#dateDebutFiltre").value = "";
+        $("#dateFinFiltre").value = "";
+
+        afficherListeTournois();
+    });
+
+    $("#rechercheJoueur").addEventListener(
+        "input",
+        afficherJoueursFiltres
+    );
+
+    $("#selectionJoueur").addEventListener(
+        "change",
+        () => afficherHistoriqueJoueur($("#selectionJoueur").value)
+    );
+
+    $("#selectionPeriode").addEventListener(
+        "change",
+        afficherClassementPeriode
+    );
+
+    document.addEventListener("click", event => {
+        const joueur = event.target.closest("[data-player]");
+
+        if (joueur) {
+            ouvrirHistorique(joueur.dataset.player);
+            return;
+        }
+
+        const tournoi = event.target.closest("[data-tournament]");
+
+        if (tournoi) {
+            afficherResultatsTournoi(tournoi.dataset.tournament);
+        }
+    });
+}
+
+
+// ========================================
+// CHARGEMENT INITIAL
+// ========================================
+
+async function chargerResultats() {
+    try {
+        $("#message").innerHTML = `
+            <p class="notice">Chargement des résultats…</p>
+        `;
+
+        adherents = await chargerAdherents();
+
+        const reponse = await fetch("data/fichiers.json");
+
+        if (!reponse.ok) {
+            throw new Error(
+                "Impossible de charger data/fichiers.json"
+            );
+        }
+
+        fichiersCharges = await reponse.json();
+
+        resultatsParFichier = new Map();
+        tousLesResultats = [];
+
+        for (const fichier of fichiersCharges) {
+            const resultats = await chargerCSV(fichier);
+
+            resultatsParFichier.set(fichier.id, resultats);
+            tousLesResultats.push(...resultats);
+        }
+
+        $("#message").innerHTML = "";
+
+        afficherClassementGeneral();
+
+        initialiserPeriodes();
+        afficherClassementPeriode();
+
+        remplirSelectionJoueurs();
+        afficherHistoriqueJoueur("");
+
+        afficherListeTournois();
+
+        connecterEvenements();
+
+    } catch (erreur) {
+        console.error("Erreur de chargement :", erreur);
+
+        $("#message").innerHTML = `
+            <p class="notice error">
+                Impossible de charger les résultats.
+                Vérifie les fichiers CSV et data/fichiers.json,
+                puis consulte la console pour plus de détails.
+            </p>
+        `;
+    }
+}
 
 chargerResultats();

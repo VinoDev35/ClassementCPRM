@@ -7,14 +7,135 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <header class="site-header">
+        <h1>Classement CPRM</h1>
+        <p class="saison">Saison 2026–2027</p>
+    </header>
 
-    <h1>Classement CPRM</h1>
+    <main>
+        <nav class="tabs" aria-label="Navigation du classement">
+            <button class="tab active" data-view="classement" aria-selected="true">
+                Classement
+            </button>
+            <button class="tab" data-view="tournois" aria-selected="false">
+                Résultats des tournois
+            </button>
+            <button class="tab" data-view="joueurs" aria-selected="false">
+                Résultats par joueur
+            </button>
+            <button class="tab" data-view="periodes" aria-selected="false">
+                Classements par période
+            </button>
+        </nav>
 
-    <div id="resultats"></div>
+        <div id="message" role="status" aria-live="polite"></div>
 
-    <div>La Fédération Française de Poker Associatif (FFPA) organise chaque année une compétition nationale, le CFIPA. Trois modes de qualification sont disponibles pour tous les joueurs licenciés dans un club adhérent à la FFPA : soit par vos résultats de l'année dans votre club, soit par un championnat qualificatif en ligne, soit par l’intermédiaire du Classement Fédéral des Opens de Poker Associatif (CFOPA).
+        <section id="view-classement" class="view active">
+            <h2>Classements de la saison</h2>
 
-    Toutes les informations sont disponibles sur le site de la FFPA : www.ffpoker.org</div>
+            <nav id="ongletsClassement" class="sub-tabs"
+                 aria-label="Catégorie de classement">
+                <button class="sub-tab active" data-category="GENERAL">
+                    Général
+                </button>
+                <button class="sub-tab" data-category="MTT">
+                    MTT
+                </button>
+                <button class="sub-tab" data-category="SNG">
+                    SnG
+                </button>
+                <button class="sub-tab" data-category="CASH">
+                    Cash
+                </button>
+            </nav>
+
+            <div id="classementGeneral"></div>
+
+            <div class="information-ffpa">
+                <p>
+                    La Fédération Française de Poker Associatif (FFPA) organise
+                    chaque année une compétition nationale, le CFIPA. Trois modes
+                    de qualification sont disponibles pour tous les joueurs
+                    licenciés dans un club adhérent à la FFPA : soit par vos
+                    résultats de l'année dans votre club, soit par un championnat
+                    qualificatif en ligne, soit par l’intermédiaire du Classement
+                    Fédéral des Opens de Poker Associatif (CFOPA).
+                </p>
+                <p>
+                    Toutes les informations sont disponibles sur le site de la FFPA :
+                    <a href="https://www.ffpoker.org" target="_blank" rel="noopener">
+                        www.ffpoker.org
+                    </a>.
+                </p>
+            </div>
+        </section>
+
+        <section id="view-tournois" class="view">
+            <h2>Résultats des tournois</h2>
+
+            <nav id="ongletsFormats" class="sub-tabs"
+                 aria-label="Format des résultats">
+                <button class="sub-tab active" data-format="MTT">MTT</button>
+                <button class="sub-tab" data-format="SNG">SnG</button>
+                <button class="sub-tab" data-format="SNGT">SnG Turbo</button>
+                <button class="sub-tab" data-format="CASH">Cash</button>
+                <button class="sub-tab" data-format="EVENT">Événements</button>
+            </nav>
+
+            <div class="filters">
+                <label>Du
+                    <input type="date" id="dateDebutFiltre">
+                </label>
+
+                <label>Au
+                    <input type="date" id="dateFinFiltre">
+                </label>
+
+                <button id="effacerFiltres" class="secondary-button" type="button">
+                    Effacer les dates
+                </button>
+            </div>
+
+            <div id="listeTournois"></div>
+            <div id="detailTournoi"></div>
+        </section>
+
+        <section id="view-joueurs" class="view">
+            <h2>Résultats par joueur</h2>
+
+            <div class="filters">
+                <label>Rechercher un joueur
+                    <input type="search" id="rechercheJoueur"
+                           placeholder="Nom du joueur">
+                </label>
+
+                <label>Joueur
+                    <select id="selectionJoueur">
+                        <option value="">Sélectionner un joueur</option>
+                    </select>
+                </label>
+            </div>
+
+            <div id="historiqueJoueur"></div>
+        </section>
+
+        <section id="view-periodes" class="view">
+            <h2>Classements par période</h2>
+
+            <p class="intro-periodes">
+                Les classements couvrent les périodes de jeu entre les vacances
+                scolaires de la zone B. Les semaines de vacances sont exclues.
+            </p>
+
+            <div class="filters">
+                <label>Période
+                    <select id="selectionPeriode"></select>
+                </label>
+            </div>
+
+            <div id="classementPeriode"></div>
+        </section>
+    </main>
 
     <script src="js/app.js"></script>
 </body>
