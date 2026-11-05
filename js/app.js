@@ -97,6 +97,12 @@ function comparerNoms(a, b) {
     });
 }
 
+function normaliserPseudo(nom) {
+    return String(nom ?? "")
+        .trim()
+        .toLocaleLowerCase("fr");
+}
+
 
 // ========================================
 // LECTURE DES CSV
@@ -204,7 +210,7 @@ function filtrerResultatsOfficiels(
 function calculerClassement(resultats, noms = adherents) {
     const classement = noms.map(nom => {
         const resultatsJoueur = resultats.filter(
-            resultat => resultat.name === nom
+            resultat => normaliserPseudo(resultat.name) === normaliserPseudo(nom)
         );
 
         const categories = {
@@ -273,7 +279,7 @@ function calculerClassement(resultats, noms = adherents) {
             ),
 
             hitman: resultats.filter(
-                resultat => resultat.hitman === nom
+                resultat => normaliserPseudo(resultat.hitman) === normaliserPseudo(nom)
             ).length,
 
             categories
@@ -562,18 +568,47 @@ function activerFormatTournoi(format) {
     });
 
     $("#detailTournoi").innerHTML = "";
+
+    remplirSelectionDatesTournois();
     afficherListeTournois();
 }
 
+function remplirSelectionDatesTournois() {
+    const select = $("#selectionDateTournoi");
+    const dateActuelle = select.value;
+
+    const dates = [...new Set(
+        fichiersCharges
+            .filter(fichier => fichier.type === formatTournoiActif)
+            .map(fichier => fichier.date)
+            .filter(Boolean)
+    )].sort((a, b) => b.localeCompare(a));
+
+    select.innerHTML = `
+        <option value="">Toutes les journées</option>
+
+        ${dates.map(date => `
+            <option value="${echapperHTML(date)}">
+                ${formaterDate(date)}
+            </option>
+        `).join("")}
+    `;
+
+    if (dates.includes(dateActuelle)) {
+        select.value = dateActuelle;
+    } else {
+        select.value = "";
+    }
+}
+
+
 function afficherListeTournois() {
-    const debut = $("#dateDebutFiltre").value;
-    const fin = $("#dateFinFiltre").value;
+    const dateSelectionnee = $("#selectionDateTournoi").value;
 
     const fichiers = [...fichiersCharges]
         .filter(fichier => fichier.type === formatTournoiActif)
         .filter(fichier =>
-            (!debut || fichier.date >= debut) &&
-            (!fin || fichier.date <= fin)
+            !dateSelectionnee || fichier.date === dateSelectionnee
         )
         .sort((a, b) =>
             (b.date || "").localeCompare(a.date || "") ||
@@ -583,7 +618,7 @@ function afficherListeTournois() {
     if (!fichiers.length) {
         $("#listeTournois").innerHTML = `
             <p class="empty-state">
-                Aucun résultat pour ce format et cette période.
+                Aucun résultat pour ce format et cette journée.
             </p>
         `;
 
@@ -608,6 +643,7 @@ function afficherListeTournois() {
             <section class="date-groupe">
                 <div class="date-entete">
                     <h3>${formaterDate(date) || date}</h3>
+
                     <span>
                         ${tournois.length}
                         ${tournois.length > 1 ? "tournois" : "tournoi"}
@@ -724,7 +760,11 @@ function afficherHistoriqueJoueur(nom) {
     }
 
     // Seuls les adhérents peuvent avoir un historique affiché.
-    if (!adherents.includes(nom)) {
+    const adherent = adherents.find(
+        joueur => normaliserPseudo(joueur) === normaliserPseudo(nom)
+    );
+
+    if (!adherent) {
         $("#historiqueJoueur").innerHTML = `
             <p class="empty-state">
                 Ce joueur ne figure pas dans la liste des adhérents.
@@ -734,7 +774,9 @@ function afficherHistoriqueJoueur(nom) {
     }
 
     const historique = tousLesResultats
-        .filter(resultat => resultat.name === nom)
+        .filter(
+            resultat => normaliserPseudo(resultat.name) === normaliserPseudo(adherent)
+        )
         .sort((a, b) =>
             b.date.localeCompare(a.date) ||
             a.rank - b.rank
@@ -769,7 +811,10 @@ function afficherHistoriqueJoueur(nom) {
 
                 <tbody>
                     ${historique.map(resultat => {
-                        const kills = resultat.hitman === nom ? 1 : 0;
+                        const kills =
+                            normaliserPseudo(resultat.hitman) === normaliserPseudo(adherent)
+                                ? 1
+                                : 0;
 
                         const fichier = fichiersCharges.find(
                             f => String(f.id) === String(resultat.fichierId)
@@ -844,7 +889,11 @@ function afficherJoueursFiltres() {
 }
 
 function ouvrirHistorique(nom) {
-    if (!adherents.includes(nom)) {
+    const adherent = adherents.find(
+        joueur => normaliserPseudo(joueur) === normaliserPseudo(nom)
+    );
+
+    if (!adherent) {
         return;
     }
 
@@ -853,8 +902,8 @@ function ouvrirHistorique(nom) {
     $("#rechercheJoueur").value = "";
     afficherJoueursFiltres();
 
-    $("#selectionJoueur").value = nom;
-    afficherHistoriqueJoueur(nom);
+    $("#selectionJoueur").value = adherent;
+    afficherHistoriqueJoueur(adherent);
 
     $("#view-joueurs").scrollIntoView({
         behavior: "smooth",
@@ -907,22 +956,10 @@ function connecterEvenements() {
         });
     });
 
-    $("#dateDebutFiltre").addEventListener(
+    $("#selectionDateTournoi").addEventListener(
         "change",
         afficherListeTournois
     );
-
-    $("#dateFinFiltre").addEventListener(
-        "change",
-        afficherListeTournois
-    );
-
-    $("#effacerFiltres").addEventListener("click", () => {
-        $("#dateDebutFiltre").value = "";
-        $("#dateFinFiltre").value = "";
-
-        afficherListeTournois();
-    });
 
     $("#rechercheJoueur").addEventListener(
         "input",
@@ -998,6 +1035,7 @@ async function chargerResultats() {
         remplirSelectionJoueurs();
         afficherHistoriqueJoueur("");
 
+        remplirSelectionDatesTournois();
         afficherListeTournois();
 
         connecterEvenements();
