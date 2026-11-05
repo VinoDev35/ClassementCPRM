@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CPRM — Gestion des SnG</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div><p class="eyebrow">CERCLE DE POKER RENNES MÉTROPOLE</p><h1>Gestion des SnG</h1></div>
+    <span id="save-status" class="save-status">Sauvegarde locale activée</span>
+  </header>
+  <main>
+    <nav class="tabs" aria-label="Étapes">
+      <button class="tab active" data-view="setup">1. Préparation</button>
+      <button class="tab" data-view="tables">2. Tables et résultats</button>
+      <button class="tab" data-view="summary">3. Vérification et export</button>
+    </nav>
+    <section id="view-setup" class="view">
+      <div class="section-heading"><div><p class="eyebrow">ÉTAPE 1</p><h2>Préparer la soirée</h2></div></div>
+      <div class="panel">
+        <h3>Formats de jeu</h3>
+        <div class="inline-controls"><label>Nombre de formats <input id="format-count" type="number" min="1" max="12" value="1"></label><button id="build-formats" class="button secondary">Configurer les formats</button></div>
+        <p class="hint">Pour chaque format, indique le nombre de joueurs à répartir et le nombre de tables. Chaque table peut accueillir jusqu’à 10 joueurs.</p>
+        <div id="formats-config"></div>
+        <div class="actions"><button id="generate-tables" class="button primary">Générer les SnG</button></div>
+      </div>
+      <div class="panel">
+        <h3>Barèmes de points</h3>
+        <p class="hint">Pour les SnG, configure les points par kill et les points de chaque place : valeur fixe ou multiplicateur du nombre de joueurs. En cash, les points sont saisis manuellement et une deuxième cave applique un malus de 100 points.</p>
+        <div id="scoring-config" class="scoring-grid"></div>
+        <button id="save-scoring" class="button secondary">Enregistrer les barèmes</button>
+      </div>
+      <div class="panel backup-panel">
+        <div><h3>Sauvegarde de la soirée</h3><p class="hint">La sauvegarde est conservée dans ce navigateur. Tu peux aussi télécharger un fichier de secours.</p></div>
+        <div class="actions wrap"><button id="download-backup" class="button secondary">Télécharger une sauvegarde</button><label class="button secondary file-button">Récupérer une sauvegarde<input id="restore-backup" type="file" accept="application/json,.json" hidden></label><button id="new-session" class="button danger">Nouvelle soirée / tout effacer</button></div>
+      </div>
+    </section>
+    <section id="view-tables" class="view hidden">
+      <div class="section-heading"><div><p class="eyebrow">ÉTAPE 2</p><h2>Tables et résultats</h2></div><button id="add-table" class="button secondary">+ Ajouter une table manuelle</button></div>
+      <p class="hint">Pour chaque joueur, renseigne sa place finale et le joueur responsable de son élimination (Hitman). Le vainqueur est automatiquement son propre Hitman. Les emplacements vides peuvent servir à ajouter des joueurs.</p>
+      <div id="tables-list"></div>
+    </section>
+    <section id="view-summary" class="view hidden">
+      <div class="section-heading"><div><p class="eyebrow">ÉTAPE 3</p><h2>Vérification et export</h2></div><div class="export-date"><label for="export-date">Date de la soirée</label><input id="export-date" type="date"></div><button id="refresh-summary" class="button secondary">Actualiser le contrôle</button></div>
+      <div id="validation-message" class="validation"></div>
+      <div id="summary-content"></div>
+      <div class="actions"><button id="export-csv" class="button primary">Exporter tous les SnG en CSV</button></div>
+      <p class="hint">Un fichier CSV est créé par table au format <code>YY-MM-DD_JEU_NUM.csv</code>, avec les colonnes exactes : <code>Rank,Name,Points,Hitman</code>. En cash, la colonne Hitman reste vide.</p>
+    </section>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </main>
+  <footer>CPRM · Outil local de gestion des résultats</footer>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
