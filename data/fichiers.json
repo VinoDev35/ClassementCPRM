@@ -166,5 +166,29 @@
         "type": "SNGT",
         "date": "2026-11-12",
         "classement": true
+    },
+    {
+        "id": "drive-11wVLfgNe9Go254tu9yEJk3zV5sNIFeYy",
+        "name": "26-11-19_Cash.csv",
+        "path": "csv/CASH/26-11-19_Cash.csv",
+        "type": "CASH",
+        "date": "2026-11-19",
+        "classement": true
+    },
+    {
+        "id": "drive-12GXOK-UtCQGD6iOqqyroESGY4SSzDb5I",
+        "name": "26-11-19_SnG_Turbo_01.csv",
+        "path": "csv/SnG%20Turbo/26-11-19_SnG_Turbo_01.csv",
+        "type": "SNGT",
+        "date": "2026-11-19",
+        "classement": true
+    },
+    {
+        "id": "drive-1Pbc4gwbcQN83v_SimDro5l-it-O1uH2N",
+        "name": "26-11-19_Turbo_5.csv",
+        "path": "csv/MTT/26-11-19_Turbo_5.csv",
+        "type": "MTT",
+        "date": "2026-11-19",
+        "classement": true
     }
 ]
